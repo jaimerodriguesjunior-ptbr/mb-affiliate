@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { LogOut, Plus, ExternalLink, Edit2, Clock, Settings, Store } from 'lucide-react'
 import Link from 'next/link'
 import { ProductActions } from './ProductActions'
+import { GeneralCatalogCopy } from './GeneralCatalogCopy'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -57,15 +58,18 @@ export default async function AdminDashboard() {
                   Configurar Loja
                 </Link>
                 {tenant.slug && (
-                  <a 
-                    href={`/c/${tenant.slug}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="flex items-center gap-2 text-sm bg-brand-gold text-brand-bg hover:bg-white px-5 py-2.5 rounded-full transition-colors font-bold shadow-[0_8px_20px_rgba(234,216,190,0.2)]"
-                  >
-                    Minha Vitrine
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+                  <>
+                    <a 
+                      href={`/c/${tenant.slug}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="flex items-center gap-2 text-sm bg-white/10 text-white hover:bg-white/20 border border-white/10 px-5 py-2.5 rounded-full transition-colors font-bold shadow-sm"
+                    >
+                      Acessar Vitrine
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    <GeneralCatalogCopy catalogUrl={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/c/${tenant.slug}`} />
+                  </>
                 )}
               </>
             )}

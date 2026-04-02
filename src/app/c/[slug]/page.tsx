@@ -20,10 +20,10 @@ export default async function PublicCatalog({
   searchParams
 }: { 
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ c?: string }>
+  searchParams: Promise<{ c?: string; p?: string }>
 }) {
   const { slug } = await params
-  const { c: selectedCategory = 'Todos' } = await searchParams
+  const { c: selectedCategory = 'Todos', p: selectedPrice = 'Todos' } = await searchParams
   const supabase = await createClient()
 
   const { data: tenant } = await supabase
@@ -50,14 +50,48 @@ export default async function PublicCatalog({
   })
 
   // Filtro de Categoria
-  const displayProducts = selectedCategory === 'Todos' 
+  let displayProducts = selectedCategory === 'Todos' 
     ? activeProducts 
     : activeProducts.filter(p => p.category === selectedCategory)
 
+  // Filtro de Preço
+  if (selectedPrice !== 'Todos') {
+    displayProducts = displayProducts.filter(product => {
+      if (!product.price) return false
+      const price = Number(product.price)
+      if (selectedPrice === 'ate-30') return price <= 30
+      if (selectedPrice === 'ate-60') return price <= 60
+      if (selectedPrice === 'ate-100') return price <= 100
+      if (selectedPrice === 'acima-100') return price > 100
+      return true
+    })
+  }
+
   const AVAILABLE_CATEGORIES = ['Todos', 'Diversos', 'Eletrônicos', 'Casa & Cozinha', 'Beleza & Saúde', 'Moda', 'Ferramentas', 'Brinquedos', 'Informática']
+  
+  const PRICE_FILTERS = [
+    { label: 'Qualquer Valor', value: 'Todos' },
+    { label: 'Até R$ 30,00', value: 'ate-30' },
+    { label: 'Até R$ 60,00', value: 'ate-60' },
+    { label: 'Até R$ 100,00', value: 'ate-100' },
+    { label: 'Acima de R$ 100,00', value: 'acima-100' },
+  ]
 
   return (
-    <div className="min-h-screen bg-[#110e0c] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-gold/10 via-[#110e0c] to-[#110e0c] text-white selection:bg-brand-gold/30">
+    <div className="min-h-screen text-white selection:bg-brand-gold/30 relative">
+      {/* BACKGROUND COM IMAGE OVERLAY PREMIUM */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
+        style={{ 
+          backgroundImage: "url('/loginpage.png')",
+          backgroundAttachment: 'fixed'
+        }}
+      />
+      {/* OVERLAY ESCURO PARA LEGIBILIDADE (85% PARA MANTER DRAMATISMO) */}
+      <div className="fixed inset-0 z-0 bg-[#0a0807]/85 backdrop-blur-[2px]" />
+
+      <div className="relative z-10">
+
       
       {/* HEADER LUXO */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5 bg-[#110e0c]/80 flex justify-center py-5 shadow-2xl backdrop-blur-xl">
@@ -92,10 +126,14 @@ export default async function PublicCatalog({
       </div>
 
       {/* CATEGORY BAR */}
-      <div className="w-full max-w-7xl mx-auto px-6 mb-12 flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide relative z-10">
+      <div className="w-full max-w-7xl mx-auto px-6 mb-4 flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide relative z-10">
         {AVAILABLE_CATEGORIES.map(cat => {
           const isActive = selectedCategory === cat
-          const url = cat === 'Todos' ? `/c/${slug}` : `/c/${slug}?c=${encodeURIComponent(cat)}`
+          const sp = new URLSearchParams()
+          if (cat !== 'Todos') sp.set('c', cat)
+          if (selectedPrice !== 'Todos') sp.set('p', selectedPrice)
+          const url = `/c/${slug}${sp.toString() ? `?${sp.toString()}` : ''}`
+          
           return (
             <Link 
               key={cat} 
@@ -103,6 +141,27 @@ export default async function PublicCatalog({
               className={`whitespace-nowrap px-6 py-2.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all ${isActive ? 'bg-brand-gold text-brand-bg shadow-[0_4px_20px_rgba(235,191,123,0.4)]' : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white'}`}
             >
               {cat}
+            </Link>
+          )
+        })}
+      </div>
+
+      {/* PRICE FILTER BAR */}
+      <div className="w-full max-w-7xl mx-auto px-6 mb-12 flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide relative z-10">
+        {PRICE_FILTERS.map(priceOption => {
+          const isActive = selectedPrice === priceOption.value
+          const sp = new URLSearchParams()
+          if (selectedCategory !== 'Todos') sp.set('c', selectedCategory)
+          if (priceOption.value !== 'Todos') sp.set('p', priceOption.value)
+          const url = `/c/${slug}${sp.toString() ? `?${sp.toString()}` : ''}`
+          
+          return (
+            <Link 
+              key={priceOption.value} 
+              href={url}
+              className={`whitespace-nowrap px-5 py-2.5 rounded-lg text-[10px] sm:text-[11px] font-bold uppercase transition-all flex items-center gap-1.5 ${isActive ? 'bg-[#221c18] border border-brand-gold/50 text-brand-gold shadow-[0_0_10px_rgba(235,191,123,0.1)]' : 'bg-transparent text-white/40 border border-white/5 hover:border-white/20 hover:text-white/80'}`}
+            >
+              {priceOption.label}
             </Link>
           )
         })}
@@ -195,10 +254,10 @@ export default async function PublicCatalog({
         </a>
       )}
 
-      {/* Rodapé Clean */}
       <footer className="py-8 text-center text-white/20 text-xs font-black uppercase tracking-widest border-t border-white/5 relative z-10">
         Gerado por MB Affiliate
       </footer>
     </div>
-  )
+  </div>
+)
 }
