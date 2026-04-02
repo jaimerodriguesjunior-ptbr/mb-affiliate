@@ -25,13 +25,6 @@ export default function EditProductForm({ product }: { product: any }) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const currentShortUrl = `${baseUrl}/r/${product.short_link}`
 
-  const handleUpdateLinkInCopy = () => {
-    const regex = /[a-zA-Z0-9.-]+\/r\/[a-zA-Z0-9_-]+/gi
-    const baseUrlSemHttp = baseUrl.replace(/^https?:\/\//, '')
-    const newCopy = data.copy.replace(regex, `${baseUrlSemHttp}/r/${product.short_link}`)
-    setData({ ...data, copy: newCopy })
-  }
-
   const validationDate = new Date(product.last_validated_at || product.created_at)
   const diffMs = new Date().getTime() - validationDate.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
@@ -177,13 +170,6 @@ export default function EditProductForm({ product }: { product: any }) {
                        <p className="text-[11px] text-brand-gold">
                          <strong className="text-brand-gold select-none">Encurtado: </strong> {currentShortUrl}
                        </p>
-                       <button
-                         type="button"
-                         onClick={handleUpdateLinkInCopy}
-                         className="mt-2 w-max text-[9px] font-black uppercase tracking-widest text-brand-bg bg-brand-gold rounded-full px-4 py-2 hover:bg-white transition-colors shadow-lg"
-                       >
-                         Reescrever Link na Copy
-                       </button>
                      </div>
                    </div>
                    

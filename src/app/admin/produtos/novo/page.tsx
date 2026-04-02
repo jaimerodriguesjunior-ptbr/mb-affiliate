@@ -49,7 +49,11 @@ export default function NewProductPage() {
   }
 
   const handleSave = async () => {
-    if (!preview || !link) return
+    if (!preview) return
+    if (!link) {
+      setErrorMsg('O link original do produto é obrigatório.')
+      return
+    }
     setIsSaving(true)
     setErrorMsg('')
     
@@ -81,8 +85,8 @@ export default function NewProductPage() {
             <ArrowLeft className="w-5 h-5 text-brand-gold" />
           </Link>
           <div>
-            <h1 className="text-3xl font-serif">Novo Produto Mágico</h1>
-            <p className="text-brand-gold/70 text-sm mt-1 font-medium">Nossa IA buscará os dados e fará o trabalho pesado por você.</p>
+            <h1 className="text-3xl font-serif">Novo Produto</h1>
+            <p className="text-brand-gold/70 text-sm mt-1 font-medium">Use a IA para buscar os dados ou cadastre tudo manualmente.</p>
           </div>
         </header>
 
@@ -125,14 +129,36 @@ export default function NewProductPage() {
               )}
             </div>
 
-            <button 
-              disabled={isLoading || !link}
-              type="submit"
-              className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-brand-brown px-8 py-5 text-[13px] font-black uppercase tracking-[0.2em] text-white shadow-[0_16px_30px_rgba(140,109,69,0.30)] hover:bg-brand-brown-dark focus:ring-2 focus:ring-brand-gold/50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Analisando e Gerando Copy...' : (pageContent ? 'Gerar Copy com Texto Colado' : 'Gerar Copy (Modo Básico)')}
-              <Wand2 className={`w-5 h-5 transition-transform ${isLoading ? 'animate-pulse' : 'group-hover:rotate-12 group-hover:scale-110'}`} />
-            </button>
+            <div className="flex flex-col gap-4">
+              <button 
+                disabled={isLoading || !link}
+                type="submit"
+                className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-brand-brown px-8 py-5 text-[13px] font-black uppercase tracking-[0.2em] text-white shadow-[0_16px_30px_rgba(140,109,69,0.30)] hover:bg-brand-brown-dark focus:ring-2 focus:ring-brand-gold/50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Analisando e Gerando Copy...' : (pageContent ? 'Gerar Copy com Texto Colado' : 'Gerar Copy (Modo Básico)')}
+                <Wand2 className={`w-5 h-5 transition-transform ${isLoading ? 'animate-pulse' : 'group-hover:rotate-12 group-hover:scale-110'}`} />
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setErrorMsg('')
+                  setPreview({
+                    title: '',
+                    imageUrl: null,
+                    description: '',
+                    copy: '',
+                    shortId: crypto.randomUUID().split('-')[0],
+                    price: '',
+                    category: 'Diversos'
+                  })
+                }}
+                disabled={isLoading}
+                className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-white/5 border border-white/10 px-8 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-white/70 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+              >
+                Ou Criar Tudo Manualmente
+              </button>
+            </div>
           </form>
         ) : (
           <div className="flex flex-col gap-6 animate-in fade-in duration-700">
@@ -157,16 +183,29 @@ export default function NewProductPage() {
                        onChange={(e) => setPreview({ ...preview, title: e.target.value })}
                        placeholder="Dê um título ao produto"
                      />
-                     <div className="flex flex-col mt-1">
-                       <label className="text-[9px] font-black uppercase text-brand-gold/60 mb-1 tracking-widest">
-                         URL da Imagem (Opcional):
-                       </label>
-                       <input 
-                         className="glass-input bg-white/5 rounded-lg p-2 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-brand-gold/50 text-white/70"
-                         value={preview.imageUrl || ''}
-                         onChange={(e) => setPreview({ ...preview, imageUrl: e.target.value })}
-                         placeholder="Cole um link direto de imagem se quiser..."
-                       />
+                     <div className="flex gap-4 mt-2">
+                       <div className="flex-1">
+                         <label className="text-[9px] font-black uppercase text-brand-gold/60 mb-1 tracking-widest">
+                           URL da Imagem (Opcional):
+                         </label>
+                         <input 
+                           className="w-full glass-input bg-white/5 rounded-lg p-2 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-brand-gold/50 text-white/70"
+                           value={preview.imageUrl || ''}
+                           onChange={(e) => setPreview({ ...preview, imageUrl: e.target.value })}
+                           placeholder="Link direto de imagem..."
+                         />
+                       </div>
+                       <div className="flex-1">
+                         <label className="text-[9px] font-black uppercase text-brand-gold/60 mb-1 tracking-widest">
+                           Link Original (Obrigatório):
+                         </label>
+                         <input 
+                           className="w-full glass-input bg-white/5 rounded-lg p-2 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-brand-gold/50 text-white/70 border border-brand-gold/30 focus:border-brand-gold/80"
+                           value={link}
+                           onChange={(e) => setLink(e.target.value)}
+                           placeholder="https://s.shopee..."
+                         />
+                       </div>
                      </div>
                      <div className="flex gap-4 mt-2">
                        <div className="flex-1">
@@ -212,6 +251,9 @@ export default function NewProductPage() {
                 </div>
              </div>
 
+             {errorMsg && (
+                <p className="text-sm font-bold text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{errorMsg}</p>
+             )}
              <div className="flex gap-4 items-center">
                  <button 
                    onClick={handleSave}
