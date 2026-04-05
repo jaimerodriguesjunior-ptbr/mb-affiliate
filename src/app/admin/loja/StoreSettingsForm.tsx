@@ -44,7 +44,23 @@ export default function StoreSettingsForm({ tenant }: { tenant: any }) {
   const [slug, setSlug] = useState(tenant.slug || '')
   const [name, setName] = useState(tenant.name || '')
   const [logoUrl, setLogoUrl] = useState(tenant.logo_url || '')
-  const [whatsapp, setWhatsapp] = useState(tenant.whatsapp || '')
+  // Inteligência para retrocompatibilidade: Lê se é JSON ou apenas número
+  let initialPhone = ''
+  let initialGroup = ''
+  if (tenant.whatsapp) {
+    if (tenant.whatsapp.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(tenant.whatsapp)
+        initialPhone = parsed.phone || ''
+        initialGroup = parsed.groupUrl || ''
+      } catch (e) {}
+    } else {
+      initialPhone = tenant.whatsapp
+    }
+  }
+
+  const [whatsapp, setWhatsapp] = useState(initialPhone)
+  const [groupUrl, setGroupUrl] = useState(initialGroup)
   
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null)
@@ -52,14 +68,16 @@ export default function StoreSettingsForm({ tenant }: { tenant: any }) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const displayUrl = `${baseUrl.replace(/^https?:\/\//, '')}/c/${slug || 'sua-loja'}`
 
-  const hasChanges = slug !== tenant.slug || name !== tenant.name || logoUrl !== tenant.logo_url || whatsapp !== (tenant.whatsapp || '')
+  const hasChanges = slug !== tenant.slug || name !== tenant.name || logoUrl !== tenant.logo_url || whatsapp !== initialPhone || groupUrl !== initialGroup
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
     setStatus(null)
 
-    const res = await updateTenantSettings(tenant.id, { slug, name, logoUrl, whatsapp })
+    // Empacotamos para mandar pra Action
+    const payloadWhatsapp = JSON.stringify({ phone: whatsapp, groupUrl: groupUrl })
+    const res = await updateTenantSettings(tenant.id, { slug, name, logoUrl, whatsapp: payloadWhatsapp })
     
     if (res.success) {
       setSlug(res.slug) // atualiza pro slug higienizado pelo backend
@@ -156,23 +174,41 @@ export default function StoreSettingsForm({ tenant }: { tenant: any }) {
              </div>
           </div>
 
-          {/* WHATSAPP COMERCIAL */}
-          <div className="pt-6 border-t border-white/5">
-             <label className="text-[11px] font-black uppercase text-brand-gold/80 mb-2 flex items-center gap-2 tracking-[0.2em]">
-               <Phone className="w-4 h-4" />
-               WhatsApp Comercial (Opcional)
-             </label>
-             <p className="text-white/50 text-xs mb-4">
-               Inclua seu número com código de país (ex: 5511999999999). 
-               Um botão flutuante aparecerá na sua vitrine para que clientes entrem em contato direto.
-             </p>
-             <input 
-               className="text-lg font-bold font-mono bg-black/30 border border-white/10 rounded-xl px-5 py-4 focus:border-brand-gold focus:outline-none w-full text-white/90 shadow-inner"
-               value={whatsapp}
-               onChange={(e) => setWhatsapp(e.target.value)}
-               placeholder="5511999999999"
-             />
-          </div>
+           <div className="pt-6 border-t border-white/5 flex flex-col gap-6">
+             <div>
+               <label className="text-[11px] font-black uppercase text-brand-gold/80 mb-2 flex items-center gap-2 tracking-[0.2em]">
+                 <Phone className="w-4 h-4" />
+                 WhatsApp para Dúvidas (Botão Flutuante)
+               </label>
+               <p className="text-white/50 text-xs mb-4">
+                 Inclua seu número com código de país (ex: 5511999999999). 
+                 Aparecerá para atendimento privado do visitante.
+               </p>
+               <input 
+                 className="text-lg font-bold font-mono bg-black/30 border border-white/10 rounded-xl px-5 py-4 focus:border-brand-gold focus:outline-none w-full text-white/90 shadow-inner"
+                 value={whatsapp}
+                 onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                 placeholder="5511999999999"
+               />
+             </div>
+
+             <div>
+               <label className="text-[11px] font-black uppercase text-brand-gold/80 mb-2 flex items-center gap-2 tracking-[0.2em]">
+                 <Globe className="w-4 h-4" />
+                 Link do Grupo VIP (Botão Fixo)
+               </label>
+               <p className="text-white/50 text-xs mb-4">
+                 Cole o link de convite do seu grupo (ex: https://chat.whatsapp.com/...).
+                 Um botão de destaque aparecerá no topo da vitrine para novos membros entrarem.
+               </p>
+               <input 
+                 className="text-lg font-mono bg-black/30 border border-white/10 rounded-xl px-5 py-4 focus:border-brand-gold focus:outline-none w-full text-white/90 shadow-inner"
+                 value={groupUrl}
+                 onChange={(e) => setGroupUrl(e.target.value)}
+                 placeholder="https://chat.whatsapp.com/..."
+               />
+             </div>
+           </div>
 
           {/* API KEY PARA EXTENSÃO */}
           {tenant.api_key && (

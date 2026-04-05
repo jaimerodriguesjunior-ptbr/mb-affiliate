@@ -201,7 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    let backendUrl = rawBackendUrl.replace(/\/+$/, '');
+    // Remove barra do final e a palavra /admin caso o usuário tenha colado o link do painel
+    let backendUrl = rawBackendUrl.replace(/\/+$/, '').replace(/\/admin$/, '');
+    
     if (!backendUrl.startsWith('http://') && !backendUrl.startsWith('https://')) {
       backendUrl = (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) 
         ? 'http://' + backendUrl 

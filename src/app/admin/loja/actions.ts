@@ -27,7 +27,7 @@ export async function updateTenantSettings(tenantId: string, payload: { slug: st
         slug: safeSlug,
         name: payload.name.trim() || 'Minha Nova Vitrine',
         logo_url: payload.logoUrl,
-        whatsapp: payload.whatsapp.replace(/\D/g, '') || null
+        whatsapp: payload.whatsapp || null
       })
       .eq('id', tenantId)
       

@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShoppingCart, Star, Sparkles, MessageCircle } from 'lucide-react'
+import { ShoppingCart, Star, Sparkles, MessageCircle, Bell } from 'lucide-react'
 
 // Metadata dinâmico do site (Para SEO e compartilhamento do link)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -41,6 +41,21 @@ export default async function PublicCatalog({
     .eq('tenant_id', tenant.id)
     .eq('is_published', true)
     .order('created_at', { ascending: false })
+
+  // Decodifica a configuração de WhatsApp que agora pode vir como JSON
+  let whatsappPhone = ''
+  let whatsappGroupUrl = ''
+  if (tenant.whatsapp) {
+    if (tenant.whatsapp.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(tenant.whatsapp)
+        whatsappPhone = parsed.phone || ''
+        whatsappGroupUrl = parsed.groupUrl || ''
+      } catch (e) {}
+    } else {
+      whatsappPhone = tenant.whatsapp
+    }
+  }
 
   const now = new Date().getTime()
   // Filtro Matador: O Culto à conversão. Esconde tudo o que não foi atualizado nos últimos 7 dias.
@@ -124,6 +139,25 @@ export default async function PublicCatalog({
          <p className="mt-6 text-white/50 text-base md:text-lg max-w-xl font-medium relative z-10">
            Navegue por nossa curadoria especial. Garanta os melhores preços ativos apenas enquanto durarem os nossos estoques monitorados!
          </p>
+
+         {/* BOTÃO GRUPO VIP (FIXO) */}
+         {whatsappGroupUrl && (
+           <div className="mt-8 relative z-10 animate-in slide-in-from-bottom-4 duration-700 delay-300">
+              <a 
+                href={whatsappGroupUrl} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full bg-gradient-to-r from-brand-gold to-[#fcd99e] px-8 py-4 font-black uppercase text-brand-bg tracking-widest shadow-[0_0_40px_rgba(235,191,123,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(235,191,123,0.5)]"
+              >
+                {/* Efeito de brilho passando */}
+                <div className="absolute inset-0 flex h-full w-full justify-center [transform:skew(-12deg)_translateX(-150%)] group-hover:duration-1000 group-hover:[transform:skew(-12deg)_translateX(150%)]">
+                  <div className="relative h-full w-8 bg-white/30" />
+                </div>
+                <Bell className="w-5 h-5 relative z-10 group-hover:animate-wiggle" />
+                <span className="relative z-10 text-[11px] sm:text-xs pt-[1px]">Entrar no Grupo VIP</span>
+              </a>
+           </div>
+         )}
       </div>
 
       {/* CATEGORY BAR */}
@@ -243,9 +277,9 @@ export default async function PublicCatalog({
       </main>
       
       {/* WhatsApp Flutuante */}
-      {tenant.whatsapp && (
+      {whatsappPhone && (
         <a
-          href={`https://api.whatsapp.com/send?phone=${tenant.whatsapp}&text=${encodeURIComponent('Olá! Vim do seu catálogo de ofertas e gostaria de tirar uma dúvida.')}`}
+          href={`https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodeURIComponent('Olá! Vim do seu catálogo de ofertas e gostaria de tirar uma dúvida.')}`}
           target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#1fb855] text-white p-4 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_8px_30px_rgba(37,211,102,0.6)] transition-all hover:scale-110 animate-in zoom-in-50 duration-500 group"
