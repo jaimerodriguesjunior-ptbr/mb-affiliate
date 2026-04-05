@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const previewTitle = document.getElementById('previewTitle');
   const previewPrice = document.getElementById('previewPrice');
   const previewOrigin = document.getElementById('previewOrigin');
+  const saveActions = document.getElementById('saveActions');
+  const saveWithAiBtn = document.getElementById('saveWithAiBtn');
   const pageWarning = document.getElementById('pageWarning');
   const openDashboard = document.getElementById('openDashboard');
 
@@ -73,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   captureBtn.addEventListener('click', async () => {
     hideStatus();
     preview.classList.remove('visible');
-    saveBtn.classList.remove('visible');
+    saveActions.classList.remove('visible');
     pageWarning.style.display = 'none';
 
     // Disable button and show spinner
@@ -160,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       preview.classList.add('visible');
-      saveBtn.classList.add('visible');
+      saveActions.classList.add('visible');
 
       showStatus(
         `✅ Produto capturado via ${capturedProduct.metodo_extracao || 'Auto-Scanner'}`,
@@ -187,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Save to backend ---
-  saveBtn.addEventListener('click', async () => {
+  async function handleSave(generateAi = false) {
     if (!capturedProduct) return;
 
     const backendUrl = backendUrlInput.value.trim();
@@ -203,9 +205,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Disable buttons and show loading
     saveBtn.disabled = true;
-    saveBtn.innerHTML = '<div class="spinner"></div><span>Salvando...</span>';
-    hideStatus();
+    saveWithAiBtn.disabled = true;
+    
+    if (generateAi) {
+      saveWithAiBtn.innerHTML = '<div class="spinner"></div><span>Gerando Copy...</span>';
+      showStatus('✨ A IA está criando o seu texto de venda... Aguarde.', 'info');
+    } else {
+      saveBtn.innerHTML = '<div class="spinner"></div><span>Salvando...</span>';
+      hideStatus();
+    }
 
     try {
       const response = await fetch(backendUrl.replace(/\/+$/, '') + '/api/capture', {
@@ -220,10 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
           imagem: capturedProduct.imagem,
           link: capturedProduct.link,
           origem: capturedProduct.origem,
-          // NOVOS CAMPOS PARA DEDUPLICAÇÃO E ENRIQUECIMENTO
           external_id: capturedProduct.external_id,
           shop_id: capturedProduct.shop_id,
-          metadata: capturedProduct.metadata
+          metadata: capturedProduct.metadata,
+          generate_ai: generateAi
         }),
       });
 
@@ -233,18 +243,23 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(result.error || `Erro ${response.status}`);
       }
 
-      showStatus('✅ Produto salvo com sucesso no seu painel!', 'success');
+      showStatus(generateAi ? '✅ Produto salvo e Copy gerada com sucesso!' : '✅ Produto salvo com sucesso!', 'success');
 
       // Reset state
       capturedProduct = null;
       preview.classList.remove('visible');
-      saveBtn.classList.remove('visible');
+      saveActions.classList.remove('visible');
     } catch (error) {
       console.error('Save error:', error);
       showStatus('Erro ao salvar: ' + (error.message || 'Falha na conexão'), 'error');
     } finally {
       saveBtn.disabled = false;
+      saveWithAiBtn.disabled = false;
       saveBtn.innerHTML = '<span>💾</span><span>Salvar no Painel</span>';
+      saveWithAiBtn.innerHTML = '<span>✨</span><span>Salvar + Gerar Post IA</span>';
     }
-  });
+  }
+
+  saveBtn.addEventListener('click', () => handleSave(false));
+  saveWithAiBtn.addEventListener('click', () => handleSave(true));
 });

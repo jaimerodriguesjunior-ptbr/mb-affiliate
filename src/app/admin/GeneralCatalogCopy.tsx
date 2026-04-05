@@ -47,7 +47,7 @@ Confira tudo aqui:
               {copyText}
             </div>
 
-            <ProductActions textToCopy={copyText} />
+            <ProductActions textToCopy={copyText} linkToCopy={catalogUrl} />
           </div>
         </div>
       )}

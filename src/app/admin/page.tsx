@@ -269,8 +269,11 @@ export default async function AdminDashboard({
                  </div>
                  
                  <div className={`pt-3 border-t border-white/5 ${isExpired ? 'opacity-30 pointer-events-none' : ''}`}>
-                   {/* This button already opens whatsapp natively on click! */}
-                   <ProductActions textToCopy={product.generated_copy} />
+                   {/* Passamos o link original (link cru) para o componente de ações */}
+                   <ProductActions 
+                     textToCopy={product.generated_copy} 
+                     linkToCopy={product.raw_link}
+                   />
                  </div>
                </div>
              </div>

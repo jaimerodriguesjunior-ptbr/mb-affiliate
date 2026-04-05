@@ -244,34 +244,56 @@
     }
 
     /* Save Button */
+    .save-actions.visible {
+      display: flex !important;
+    }
+
+    .save-ai-btn {
+      width: 100%;
+      padding: 12px 20px;
+      /* Gradiente Luxo IA: Dourado para um Violeta Profundo */
+      background: linear-gradient(135deg, #c4a265 0%, #6366f1 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .save-ai-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+      filter: brightness(1.1);
+    }
+
+    .save-ai-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .save-btn {
       width: 100%;
       padding: 12px 20px;
-      background: rgba(34, 197, 94, 0.15);
+      background: rgba(34, 197, 94, 0.1);
       color: #86efac;
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      border: 1px solid rgba(34, 197, 94, 0.2);
       border-radius: 10px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       transition: all 0.2s;
-    }
-
-    .save-btn.visible {
-      display: flex;
-    }
-
-    .save-btn:hover {
-      background: rgba(34, 197, 94, 0.25);
-    }
-
-    .save-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
     }
 
     /* Footer */
@@ -352,11 +374,18 @@
       </div>
     </div>
 
-    <!-- Save Button -->
-    <button class="save-btn" id="saveBtn">
-      <span>💾</span>
-      <span>Salvar no Painel</span>
-    </button>
+    <!-- Save Buttons -->
+    <div class="save-actions" id="saveActions" style="display: none; flex-direction: column; gap: 10px; margin-top: 4px;">
+      <button class="save-btn" id="saveBtn">
+        <span>💾</span>
+        <span>Salvar no Painel</span>
+      </button>
+
+      <button class="save-ai-btn" id="saveWithAiBtn">
+        <span>✨</span>
+        <span>Salvar + Gerar Post IA</span>
+      </button>
+    </div>
   </div>
 
   <div class="footer">

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { scrapeAndGenerateCopy } from '@/app/admin/produtos/actions'
 
 // Use service role to bypass RLS — we validate via API key
 const supabaseAdmin = createClient(
@@ -13,8 +14,7 @@ const supabaseAdmin = createClient(
  * Recebe dados de um produto capturado pela extensão Chrome.
  * Autenticação via header X-API-Key (vinculado ao tenant).
  * 
- * Body: { titulo, preco, imagem, link, origem }
- * Headers: X-API-Key
+ * Body: { titulo, preco, imagem, link, origem, generate_ai }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse and validate body
     const body = await request.json()
-    const { titulo, preco, imagem, link, origem, external_id, shop_id, metadata } = body
+    const { titulo, preco, imagem, link, origem, external_id, shop_id, metadata, generate_ai } = body
 
     if (!titulo || !link) {
       return NextResponse.json(
@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Check if product already exists (Robust deduplication)
-    let existingProductId = null
+    let productId = null
+    let isNew = false
     
     // Primary strategy: Unique IDs (Item ID + Shop ID)
     if (external_id && shop_id) {
@@ -66,11 +67,11 @@ export async function POST(request: NextRequest) {
          .eq('shop_id', shop_id)
          .single()
        
-       if (existingById) existingProductId = existingById.id
+       if (existingById) productId = existingById.id
     }
 
     // Fallback strategy: Raw link (for other sites or if IDs missing)
-    if (!existingProductId) {
+    if (!productId) {
       const { data: existingByLink } = await supabaseAdmin
         .from('products')
         .select('id')
@@ -78,10 +79,10 @@ export async function POST(request: NextRequest) {
         .eq('raw_link', link)
         .single()
       
-      if (existingByLink) existingProductId = existingByLink.id
+      if (existingByLink) productId = existingByLink.id
     }
 
-    if (existingProductId) {
+    if (productId) {
       // PRODUCT EXISTS — Update current price, history and metadata
       const updateData: any = { 
         last_validated_at: new Date().toISOString(),
@@ -92,67 +93,74 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin
         .from('products')
         .update(updateData)
-        .eq('id', existingProductId)
+        .eq('id', productId)
 
       if (preco) {
         await supabaseAdmin.from('historico_precos').insert({
-          product_id: existingProductId,
+          product_id: productId,
           preco,
         })
       }
+    } else {
+      // 4. Create new product
+      isNew = true
+      const shortId = crypto.randomUUID().split('-')[0]
 
-      return NextResponse.json({
-        success: true,
-        message: 'Produto sincronizado. Dados e histórico atualizados.',
-        product_id: existingProductId,
-        is_new: false,
-      })
+      const { data: newProduct, error: insertError } = await supabaseAdmin
+        .from('products')
+        .insert({
+          tenant_id: tenant.id,
+          name: titulo,
+          raw_link: link,
+          short_link: shortId,
+          image_url: imagem || null,
+          price: preco || null,
+          origem: origem || 'outro',
+          is_published: false,
+          metadata: metadata || {},
+          external_id: external_id || null,
+          shop_id: shop_id || null,
+          generated_copy: null, 
+        })
+        .select('id')
+        .single()
+
+      if (insertError) {
+        throw new Error('Erro ao salvar produto: ' + insertError.message)
+      }
+      productId = newProduct.id
+
+      // 5. Insert first price history entry
+      if (preco) {
+        await supabaseAdmin.from('historico_precos').insert({
+          product_id: productId,
+          preco,
+        })
+      }
     }
 
-    // 4. Create new product
-    const shortId = crypto.randomUUID().split('-')[0]
-
-    const { data: newProduct, error: insertError } = await supabaseAdmin
-      .from('products')
-      .insert({
-        tenant_id: tenant.id,
-        name: titulo,
-        raw_link: link,
-        short_link: shortId,
-        image_url: imagem || null,
-        price: preco || null,
-        origem: origem || 'outro',
-        is_published: false,
-        metadata: metadata || {},
-        external_id: external_id || null,
-        shop_id: shop_id || null,
-        generated_copy: null, 
-      })
-      .select('id')
-      .single()
-
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      return NextResponse.json(
-        { success: false, error: 'Erro ao salvar produto: ' + insertError.message },
-        { status: 500 }
-      )
-    }
-
-    // 5. Insert first price history entry
-    if (preco && newProduct) {
-      await supabaseAdmin.from('historico_precos').insert({
-        product_id: newProduct.id,
-        preco,
-      })
+    // --- 6. OPTIONAL: AI COPY GENERATION ---
+    if (generate_ai && productId) {
+      try {
+        const aiResult = await scrapeAndGenerateCopy(link)
+        if (aiResult.success && aiResult.data?.copy) {
+          await supabaseAdmin
+            .from('products')
+            .update({ generated_copy: aiResult.data.copy })
+            .eq('id', productId)
+        }
+      } catch (aiErr) {
+        console.error('AI Generation failed in capture API:', aiErr)
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Produto capturado com sucesso!',
-      product_id: newProduct?.id,
-      is_new: true,
+      message: generate_ai ? 'Produto salvo e Copy gerada!' : 'Produto capturado com sucesso!',
+      product_id: productId,
+      is_new: isNew,
     })
+
   } catch (error: any) {
     console.error('Capture API error:', error)
     return NextResponse.json(
