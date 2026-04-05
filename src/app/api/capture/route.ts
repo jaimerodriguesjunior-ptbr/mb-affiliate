@@ -9,12 +9,25 @@ const supabaseAdmin = createClient(
 )
 
 /**
+ * OPTIONS /api/capture
+ * 
+ * Necessário para lidar com o preflight de CORS da extensão.
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+    },
+  })
+}
+
+/**
  * POST /api/capture
  * 
  * Recebe dados de um produto capturado pela extensão Chrome.
- * Autenticação via header X-API-Key (vinculado ao tenant).
- * 
- * Body: { titulo, preco, imagem, link, origem, generate_ai }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -154,18 +167,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Retornamos com os headers de CORS necessários para a extensão
     return NextResponse.json({
       success: true,
       message: generate_ai ? 'Produto salvo e Copy gerada!' : 'Produto capturado com sucesso!',
       product_id: productId,
       is_new: isNew,
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+      }
     })
 
   } catch (error: any) {
     console.error('Capture API error:', error)
     return NextResponse.json(
       { success: false, error: 'Erro interno: ' + (error.message || 'desconhecido') },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
     )
   }
 }

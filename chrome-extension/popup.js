@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
           files: ['content.js'],
         });
       } catch (injectError) {
-        // May fail on restricted pages — that's OK, we'll try messaging anyway
         console.warn('Script injection skipped:', injectError.message);
       }
 
@@ -129,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       previewPrice.textContent = formatPrice(capturedProduct.preco);
       previewOrigin.textContent = originLabel(capturedProduct.origem);
 
-      // --- NEW: Display Metadata (Rating & Variations) in Preview ---
+      // --- MetaData Display ---
       const extra = document.getElementById('previewExtra');
       extra.innerHTML = '';
       
@@ -175,10 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         error.message?.includes('Receiving end does not exist')
       ) {
         pageWarning.style.display = 'block';
-        showStatus(
-          'Não foi possível acessar esta página. Navegue até um produto.',
-          'error'
-        );
+        showStatus('Não foi possível acessar esta página. Navegue até um produto.', 'error');
       } else {
         showStatus(error.message || 'Erro desconhecido.', 'error');
       }
@@ -192,10 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleSave(generateAi = false) {
     if (!capturedProduct) return;
 
-    const backendUrl = backendUrlInput.value.trim();
+    const rawBackendUrl = backendUrlInput.value.trim();
     const apiKey = apiKeyInput.value.trim();
 
-    if (!backendUrl) {
+    if (!rawBackendUrl) {
       showStatus('Configure a URL do seu painel primeiro.', 'error');
       return;
     }
@@ -203,6 +199,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!apiKey) {
       showStatus('Configure sua API Key primeiro.', 'error');
       return;
+    }
+
+    let backendUrl = rawBackendUrl.replace(/\/+$/, '');
+    if (!backendUrl.startsWith('http://') && !backendUrl.startsWith('https://')) {
+      backendUrl = (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) 
+        ? 'http://' + backendUrl 
+        : 'https://' + backendUrl;
     }
 
     // Disable buttons and show loading
@@ -218,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch(backendUrl.replace(/\/+$/, '') + '/api/capture', {
+      const response = await fetch(backendUrl + '/api/capture', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,10 +240,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }),
       });
 
-      const result = await response.json();
+      let result;
+      const responseText = await response.text();
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Non-JSON response:", responseText);
+        throw new Error(`A URL não é uma API válida (Status ${response.status}). Verifique se a URL do painel está certa ou se o site está atualizado.`);
+      }
 
       if (!response.ok || !result.success) {
-        throw new Error(result.error || `Erro ${response.status}`);
+        throw new Error(result?.error || `Erro ${response.status}`);
       }
 
       showStatus(generateAi ? '✅ Produto salvo e Copy gerada com sucesso!' : '✅ Produto salvo com sucesso!', 'success');
@@ -251,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveActions.classList.remove('visible');
     } catch (error) {
       console.error('Save error:', error);
-      showStatus('Erro ao salvar: ' + (error.message || 'Falha na conexão'), 'error');
+      showStatus('Erro ao conectar com: ' + backendUrl + '. Verifique se o servidor está ligado.', 'error');
     } finally {
       saveBtn.disabled = false;
       saveWithAiBtn.disabled = false;
