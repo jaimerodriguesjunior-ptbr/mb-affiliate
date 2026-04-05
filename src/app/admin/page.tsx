@@ -1,11 +1,18 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import { LogOut, Plus, ExternalLink, Edit2, Clock, Settings, Store } from 'lucide-react'
+import { LogOut, Plus, ExternalLink, Edit2, Clock, Settings, Store, TrendingDown, TrendingUp, Minus, Zap, Star, MessageSquare, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { ProductActions } from './ProductActions'
 import { GeneralCatalogCopy } from './GeneralCatalogCopy'
+import { PublishToggle } from './PublishToggle'
+import { analisarPrecosTenant, type StatusOferta } from '@/utils/price-analysis'
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams
+}: {
+  searchParams: Promise<{ status?: string }>
+}) {
+  const { status: selectedStatus = 'all' } = await searchParams
   const supabase = await createClient()
 
   const {
@@ -24,17 +31,32 @@ export default async function AdminDashboard() {
 
   let products: any[] = []
   if (tenant) {
-    const { data: prods } = await supabase
+    let query = supabase
       .from('products')
       .select('*')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false })
+    
+    if (selectedStatus === 'published') {
+      query = query.eq('is_published', true)
+    } else if (selectedStatus === 'monitoring') {
+      query = query.eq('is_published', false)
+    }
+
+    const { data: prods } = await query
     if (prods) products = prods
+  }
+
+  // Análise de preços para todos os produtos do tenant
+  let priceAnalysis = new Map<string, any>()
+  if (tenant) {
+    priceAnalysis = await analisarPrecosTenant(tenant.id)
   }
 
   return (
     <div className="flex-1 p-6 sm:p-8 animate-in fade-in duration-500 h-full overflow-auto">
       <div className="max-w-7xl mx-auto">
+        {/* ... (header) */}
         <header className="glass rounded-3xl p-6 px-8 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between border border-white/10 mb-8">
           <div>
             <h1 className="text-3xl font-serif">Painel de Administração</h1>
@@ -82,6 +104,28 @@ export default async function AdminDashboard() {
           </div>
         </header>
 
+        {/* FILTRO DE STATUS */}
+        <div className="flex flex-wrap items-center gap-3 mb-8 animate-in slide-in-from-left-4 duration-500">
+          <Link 
+            href="/admin?status=all"
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedStatus === 'all' ? 'bg-brand-gold text-brand-bg shadow-[0_5px_20px_rgba(235,191,123,0.3)]' : 'bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white'}`}
+          >
+            Todos ({products.length})
+          </Link>
+          <Link 
+            href="/admin?status=published"
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedStatus === 'published' ? 'bg-brand-gold text-brand-bg shadow-[0_5px_20px_rgba(235,191,123,0.3)]' : 'bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white'}`}
+          >
+            🟢 Ativos na Vitrine
+          </Link>
+          <Link 
+            href="/admin?status=monitoring"
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedStatus === 'monitoring' ? 'bg-brand-gold text-brand-bg shadow-[0_5px_20px_rgba(235,191,123,0.3)]' : 'bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white'}`}
+          >
+            🕒 Em Monitoramento
+          </Link>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
            {/* LIST EXISTING PRODUCTS */}
            {products.map((product) => {
@@ -94,6 +138,29 @@ export default async function AdminDashboard() {
              let clockColor = 'text-green-400'
              if (daysLeft <= 2 && daysLeft > 0) clockColor = 'text-amber-400'
              if (isExpired) clockColor = 'text-red-400'
+
+             // Análise de preço deste produto
+             const analise = priceAnalysis.get(product.id)
+             const statusOferta: StatusOferta | undefined = analise?.status_oferta
+
+             // Cores e labels do status
+             const statusConfig: Record<string, { bg: string, text: string, label: string, Icon: any }> = {
+               excelente: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', label: '⚡ Menor preço!', Icon: TrendingDown },
+               boa: { bg: 'bg-blue-500/15', text: 'text-blue-400', label: '👍 Boa oferta', Icon: Minus },
+               normal: { bg: 'bg-white/5', text: 'text-white/50', label: 'Preço normal', Icon: TrendingUp },
+               sem_dados: { bg: 'bg-white/5', text: 'text-white/30', label: '—', Icon: Minus },
+             }
+             const sConfig = statusOferta ? statusConfig[statusOferta] : null
+
+             // Origem do produto
+             const origemLabels: Record<string, string> = {
+               shopee: '🛒 Shopee',
+               mercadolivre: '🤝 ML',
+               amazon: '📦 AMZ',
+               magalu: '💜 Magalu',
+               manual: '✏️ Manual',
+               outro: '🌐 Outro',
+             }
 
              return (
              <div key={product.id} className={`glass rounded-2xl flex flex-col border ${isExpired ? 'border-red-500/50 hover:border-red-500 bg-red-950/20' : 'border-white/5 hover:border-white/20 bg-white/5'} transition-all overflow-hidden shadow-xl animate-in zoom-in-95 duration-500`}>
@@ -112,13 +179,25 @@ export default async function AdminDashboard() {
                       <span className="text-white/30 text-sm">Sem foto</span>
                    </div>
                  )}
-                 {/* Clock Countdown */}
-                 <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/10 z-20 shadow-lg group-hover:opacity-0 transition-opacity duration-300">
-                   <Clock className={`w-3.5 h-3.5 ${clockColor}`} />
-                   <span className={`text-[10px] font-black ${clockColor}`}>
-                     {isExpired ? 'Vencido' : `${daysLeft}d restantes`}
-                   </span>
-                 </div>
+                  {/* Clock Countdown */}
+                  <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/10 z-20 shadow-lg group-hover:opacity-0 transition-opacity duration-300">
+                    <Clock className={`w-3.5 h-3.5 ${clockColor}`} />
+                    <span className={`text-[10px] font-black ${clockColor}`}>
+                      {isExpired ? 'Vencido' : `${daysLeft}d restantes`}
+                    </span>
+                  </div>
+                  {/* Status Badge (Published/Monitoring) */}
+                  <div className="absolute bottom-3 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <PublishToggle productId={product.id} initialStatus={product.is_published} />
+                  </div>
+                  {/* Origem Badge */}
+                  {product.origem && product.origem !== 'manual' && (
+                    <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 z-20 shadow-lg group-hover:opacity-0 transition-opacity duration-300">
+                      <span className="text-[9px] font-bold text-white/70">
+                        {origemLabels[product.origem] || product.origem}
+                      </span>
+                    </div>
+                  )}
                  {/* Hover Edit Action centered directly over image */}
                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all z-10 flex items-center justify-center backdrop-blur-[2px]">
                    <Link 
@@ -131,10 +210,62 @@ export default async function AdminDashboard() {
                </div>
                
                <div className="p-5 flex flex-col flex-1">
-                 <h3 className={`font-serif font-bold text-lg leading-tight line-clamp-2 mb-3 tracking-wide ${isExpired ? 'text-red-200' : ''}`}>{product.name}</h3>
-                 
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                      {product.is_published ? '🟢 Vitrine Online' : '🕒 Em Monitoramento'}
+                    </span>
+                  </div>
+                  
+                  {/* TRIO DE OURO: NOTA, AVALIAÇÕES E VENDAS */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {product.metadata?.nota && (
+                      <div className="flex items-center gap-1 bg-yellow-500/10 text-yellow-500 px-2.5 py-1 rounded-lg border border-yellow-500/20 group/stat">
+                        <Star className="w-3 h-3 fill-current" />
+                        <span className="text-[10px] font-black">{product.metadata.nota}</span>
+                      </div>
+                    )}
+                    {product.metadata?.avaliacoes && (
+                      <div className="flex items-center gap-1 bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-lg border border-blue-500/20" title="Total de Avaliações">
+                        <MessageSquare className="w-3 h-3" />
+                        <span className="text-[10px] font-black">{product.metadata.avaliacoes}</span>
+                      </div>
+                    )}
+                    {product.metadata?.vendas && (
+                      <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20" title="Volume de Vendas">
+                        <ShoppingBag className="w-3 h-3" />
+                        <span className="text-[10px] font-black">{product.metadata.vendas}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <h3 className={`font-serif font-bold text-lg leading-tight line-clamp-2 mb-3 tracking-wide ${isExpired ? 'text-red-200' : ''}`}>{product.name}</h3>
+                  
+                  {/* Exibir Variações (se houver no metadata) */}
+                  {product.metadata?.variacoes?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {product.metadata.variacoes.map((v: any, i: number) => (
+                        <span key={i} className="bg-white/5 text-[9px] text-white/50 px-2 py-0.5 rounded border border-white/5 font-medium">
+                          {v.categoria}: {v.opcoes.length}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Status de Oferta */}
+                 {sConfig && statusOferta !== 'sem_dados' && (
+                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg mb-3 ${sConfig.bg} border border-white/5`}>
+                     <sConfig.Icon className={`w-3.5 h-3.5 ${sConfig.text}`} />
+                     <span className={`text-[11px] font-bold ${sConfig.text}`}>{sConfig.label}</span>
+                     {analise?.variacao_percentual !== null && analise?.variacao_percentual !== undefined && (
+                       <span className="text-[10px] text-white/40 ml-auto">
+                         {analise.variacao_percentual > 0 ? '+' : ''}{analise.variacao_percentual}%
+                       </span>
+                     )}
+                   </div>
+                 )}
+
                  <div className={`flex-1 text-xs text-white/60 bg-black/30 rounded-lg p-3 line-clamp-4 font-sans border border-white/5 mt-auto mb-4 ${isExpired ? 'opacity-50' : ''}`}>
-                   {product.generated_copy}
+                   {product.generated_copy || <span className="italic text-white/30">Sem texto de venda — gere no editor</span>}
                  </div>
                  
                  <div className={`pt-3 border-t border-white/5 ${isExpired ? 'opacity-30 pointer-events-none' : ''}`}>

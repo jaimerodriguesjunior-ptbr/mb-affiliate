@@ -39,6 +39,7 @@ export default async function PublicCatalog({
     .from('products')
     .select('*')
     .eq('tenant_id', tenant.id)
+    .eq('is_published', true)
     .order('created_at', { ascending: false })
 
   const now = new Date().getTime()

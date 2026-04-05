@@ -330,3 +330,21 @@ export async function deleteProduct(id: string) {
     return { success: false, error: e.message }
   }
 }
+
+export async function togglePublish(id: string, newState: boolean) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, error: 'Sessão expirada.' }
+
+    const { error } = await supabase
+      .from('products')
+      .update({ is_published: newState })
+      .eq('id', id)
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (e: any) {
+    return { success: false, error: e.message }
+  }
+}

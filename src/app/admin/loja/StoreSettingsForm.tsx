@@ -1,10 +1,43 @@
 'use client'
 
 import { useState } from 'react'
-import { Save, CheckCircle2, Globe, Building2, Image as ImageIcon, Phone } from 'lucide-react'
+import { Save, CheckCircle2, Globe, Building2, Image as ImageIcon, Phone, Key, Copy, Check } from 'lucide-react'
 import { updateTenantSettings } from './actions'
 import { useRouter } from 'next/navigation'
 import { ImageUpload } from '../ImageUpload'
+
+function ApiKeyDisplay({ apiKey }: { apiKey: string }) {
+  const [copied, setCopied] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+
+  const masked = apiKey.substring(0, 8) + '••••••••••••••••'
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(apiKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <div 
+        className="flex-1 text-sm font-mono bg-black/30 border border-white/10 rounded-xl px-5 py-4 text-white/70 cursor-pointer select-all truncate"
+        onClick={() => setRevealed(!revealed)}
+        title="Clique para revelar/esconder"
+      >
+        {revealed ? apiKey : masked}
+      </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className="flex-shrink-0 p-3 bg-brand-gold/10 hover:bg-brand-gold/20 border border-brand-gold/20 rounded-xl transition-colors"
+        title="Copiar API Key"
+      >
+        {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5 text-brand-gold" />}
+      </button>
+    </div>
+  )
+}
 
 export default function StoreSettingsForm({ tenant }: { tenant: any }) {
   const router = useRouter()
@@ -140,6 +173,21 @@ export default function StoreSettingsForm({ tenant }: { tenant: any }) {
                placeholder="5511999999999"
              />
           </div>
+
+          {/* API KEY PARA EXTENSÃO */}
+          {tenant.api_key && (
+          <div className="pt-6 border-t border-white/5">
+             <label className="text-[11px] font-black uppercase text-brand-gold/80 mb-2 flex items-center gap-2 tracking-[0.2em]">
+               <Key className="w-4 h-4" />
+               API Key — Extensão Chrome
+             </label>
+             <p className="text-white/50 text-xs mb-4">
+               Cole esta chave na extensão do Chrome para conectar a captura de produtos ao seu painel.
+               <strong className="text-amber-400/80"> Não compartilhe esta chave.</strong>
+             </p>
+             <ApiKeyDisplay apiKey={tenant.api_key} />
+          </div>
+          )}
        </div>
 
        <div className="flex justify-end mt-2">
