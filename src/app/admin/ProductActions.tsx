@@ -1,7 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { Copy, Check, Link as LinkIcon } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Copy, Check, Link as LinkIcon, Clipboard } from 'lucide-react'
+
+// Referência GLOBAL da aba do WhatsApp — compartilhada entre todos os cards
+// Armazenada no objeto window para sobreviver a qualquer re-render do React
+function getWaWindow(): Window | null {
+  try {
+    const ref = (window as any).__mb_waWindow
+    if (ref && !ref.closed) return ref
+  } catch (e) {}
+  return null
+}
+function setWaWindow(w: Window | null) {
+  (window as any).__mb_waWindow = w
+}
 
 // Ícone limpo do WhatsApp
 const WhatsappIcon = () => (
@@ -21,6 +34,14 @@ export function ProductActions({
 }) {
   const [copiedText, setCopiedText] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [waToast, setWaToast] = useState<'opened' | 'copied' | null>(null)
+
+  // Limpa o toast após 3 segundos
+  useEffect(() => {
+    if (!waToast) return
+    const t = setTimeout(() => setWaToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [waToast])
 
   const handleCopyText = () => {
     navigator.clipboard.writeText(textToCopy)
@@ -39,7 +60,7 @@ export function ProductActions({
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     const baseUrl = isMobile ? 'https://api.whatsapp.com/send' : 'https://web.whatsapp.com/send'
     
-    // Se temos link separado, podemos anexá-lo ao final do texto se ele já não estiver lá
+    // Monta o texto final com link se necessário
     let finalPayload = textToCopy
     if (linkToCopy && !textToCopy.includes(linkToCopy)) {
       finalPayload += `\n\nConfira aqui: ${linkToCopy}`
@@ -49,12 +70,27 @@ export function ProductActions({
     const url = phoneNumber 
       ? `${baseUrl}?phone=${phoneNumber}&text=${encodedText}`
       : `${baseUrl}?text=${encodedText}`
-      
-    window.open(url, 'whatsapp_web')
+
+    // Sempre copia o texto para a área de transferência
+    navigator.clipboard.writeText(finalPayload)
+
+    // Verifica se já temos uma aba do WhatsApp aberta
+    const existingWa = getWaWindow()
+
+    if (existingWa) {
+      // A aba já está aberta! Só copiamos o texto (já copiado acima).
+      // O usuário troca para a aba do WA e cola com Ctrl+V.
+      setWaToast('copied')
+    } else {
+      // Primeira vez (ou aba foi fechada): abre o WhatsApp com texto pré-preenchido
+      const w = window.open(url, '_blank')
+      setWaWindow(w)
+      setWaToast('opened')
+    }
   }
 
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-2 w-full relative">
       <div className="flex gap-2">
         <button 
           onClick={handleCopyText}
@@ -91,8 +127,30 @@ export function ProductActions({
         className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-brand-gold text-brand-bg hover:bg-white border border-brand-gold/50 shadow-lg"
       >
         <WhatsappIcon />
-        Enviar no Grupo
+        {waToast === 'copied' ? 'Texto Copiado! Cole no WA' : 'Enviar no Grupo'}
       </button>
+
+      {/* Toast de feedback flutuante */}
+      {waToast && (
+        <div className={`absolute -top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-2xl border animate-in fade-in slide-in-from-bottom-2 duration-300 whitespace-nowrap flex items-center gap-2 ${
+          waToast === 'opened'
+            ? 'bg-green-500/20 text-green-400 border-green-500/30'
+            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+        }`}>
+          {waToast === 'opened' ? (
+            <>
+              <Check className="w-3.5 h-3.5" />
+              WhatsApp aberto com o texto!
+            </>
+          ) : (
+            <>
+              <Clipboard className="w-3.5 h-3.5" />
+              Texto copiado! Cole no WhatsApp (Ctrl+V)
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+

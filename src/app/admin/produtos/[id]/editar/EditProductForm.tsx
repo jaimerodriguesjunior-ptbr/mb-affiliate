@@ -160,9 +160,31 @@ export default function EditProductForm({ product }: { product: any }) {
                        <div className="flex flex-col gap-1 w-full">
                          <label className="text-[9px] font-bold text-white/50">LINK DO FORNECEDOR (ORIGINAL):</label>
                          <input 
-                           className="bg-black/20 text-white/80 text-xs rounded-lg p-2.5 w-full focus:outline-none focus:ring-1 focus:ring-brand-gold/50 border border-white/5"
+                           className="bg-black/20 text-white/80 text-xs rounded-lg p-2.5 w-full focus:outline-none focus:ring-1 focus:ring-brand-gold/50 border border-white/5 disabled:opacity-50"
                            value={data.rawLink}
                            onChange={(e) => setData({ ...data, rawLink: e.target.value })}
+                           onBlur={() => {
+                             // Quando a pessoa termina de colar/editar e tira o mouse (blur), 
+                             // nós substituímos a URL antiga pela nova dentro da copy
+                             let updatedCopy = data.copy;
+                             if (product.raw_link && updatedCopy.includes(product.raw_link)) {
+                               updatedCopy = updatedCopy.split(product.raw_link).join(data.rawLink);
+                             } else {
+                               // Fallback: se usar proxy ou url não exata no bd, acha urls http genéricas no final do texto
+                               const urlRegex = /https?:\/\/[^\s]+/g;
+                               const urls = updatedCopy.match(urlRegex);
+                               if (urls && urls.length > 0) {
+                                 // substitui a última URL do texto (onde a IA costuma colocar) pelo link novo
+                                 let lastUrl = urls[urls.length - 1];
+                                 if (data.rawLink) {
+                                  updatedCopy = updatedCopy.split(lastUrl).join(data.rawLink);
+                                 }
+                               }
+                             }
+                             if (updatedCopy !== data.copy) {
+                               setData({ ...data, copy: updatedCopy });
+                             }
+                           }}
                            placeholder="Cole o novo link do fornecedor aqui caso o anterior tenha inspirado..."
                          />
                        </div>
