@@ -50,7 +50,7 @@ export function ProductActions({
       ? `${baseUrl}?phone=${phoneNumber}&text=${encodedText}`
       : `${baseUrl}?text=${encodedText}`
       
-    window.open(url, '_blank', 'noopener,noreferrer')
+    window.open(url, 'whatsapp_web')
   }
 
   return (

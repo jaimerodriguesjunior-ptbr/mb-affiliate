@@ -280,8 +280,7 @@ export default async function PublicCatalog({
       {whatsappPhone && (
         <a
           href={`https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodeURIComponent('Olá! Vim do seu catálogo de ofertas e gostaria de tirar uma dúvida.')}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          target="whatsapp_web"
           className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#1fb855] text-white p-4 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_8px_30px_rgba(37,211,102,0.6)] transition-all hover:scale-110 animate-in zoom-in-50 duration-500 group"
           title="Falar com o vendedor pelo WhatsApp"
         >
