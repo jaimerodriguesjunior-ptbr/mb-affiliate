@@ -44,7 +44,11 @@ export function ProductActions({
   }, [waToast])
 
   const handleCopyText = () => {
-    navigator.clipboard.writeText(textToCopy)
+    let finalPayload = textToCopy
+    if (linkToCopy && !textToCopy.includes(linkToCopy)) {
+      finalPayload += `\n\nConfira aqui: ${linkToCopy}`
+    }
+    navigator.clipboard.writeText(finalPayload)
     setCopiedText(true)
     setTimeout(() => setCopiedText(false), 2000)
   }
@@ -91,35 +95,33 @@ export function ProductActions({
 
   return (
     <div className="flex flex-col gap-2 w-full relative">
-      <div className="flex gap-2">
+      <button 
+        onClick={handleCopyText}
+        title="Copiar Texto de Venda com Link"
+        className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          copiedText 
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+            : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
+        }`}
+      >
+        {copiedText ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copiedText ? 'Copiado' : 'Copiar Texto com link'}
+      </button>
+
+      {linkToCopy && (
         <button 
-          onClick={handleCopyText}
-          title="Copiar Texto de Venda"
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            copiedText 
+          onClick={handleCopyLink}
+          title="Copiar apenas o Link de Afiliado"
+          className={`w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            copiedLink 
               ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
               : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
           }`}
         >
-          {copiedText ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copiedText ? 'Copiado' : 'Texto'}
+          {copiedLink ? <Check className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
+          {copiedLink ? 'Copiado' : 'Copiar Só o Link'}
         </button>
-
-        {linkToCopy && (
-          <button 
-            onClick={handleCopyLink}
-            title="Copiar Link de Afiliado"
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-              copiedLink 
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                : 'bg-white/5 text-white hover:bg-white/10 border border-white/5'
-            }`}
-          >
-            {copiedLink ? <Check className="w-3.5 h-3.5" /> : <LinkIcon className="w-3.5 h-3.5" />}
-            {copiedLink ? 'Copiado' : 'Link'}
-          </button>
-        )}
-      </div>
+      )}
       
       <button 
         onClick={handleWhatsApp}

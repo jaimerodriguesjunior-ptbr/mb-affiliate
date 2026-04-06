@@ -23,7 +23,6 @@ export default function EditProductForm({ product }: { product: any }) {
   const displayImage = data.imageUrl || product.image_url
   
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const currentShortUrl = `${baseUrl}/r/${product.short_link}`
 
   const validationDate = new Date(product.last_validated_at || product.created_at)
   const diffMs = new Date().getTime() - validationDate.getTime()
@@ -139,8 +138,8 @@ export default function EditProductForm({ product }: { product: any }) {
                      </div>
                    </div>
                    
-                   <div className="flex flex-col mt-1">
-                     <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-2 tracking-widest pl-1">
+                   <div className="flex flex-col mt-2">
+                     <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-1 tracking-widest pl-1">
                        URL da Imagem:
                      </label>
                      <input 
@@ -152,13 +151,11 @@ export default function EditProductForm({ product }: { product: any }) {
                      <span className="text-[10px] text-white/40 mt-2 pl-1">A IA não encontrou a foto original? Copie o link da imagem no site da Shopee/Amazon e cole aqui.</span>
                    </div>
                    
-                   <div className="flex flex-col mt-4">
-                     <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-2 tracking-widest pl-1">
-                       Seus Links:
+                   <div className="flex flex-col mt-3">
+                     <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-1 tracking-widest pl-1">
+                       Link do Fornecedor Original:
                      </label>
-                     <div className="glass-input bg-white/5 rounded-xl p-3 flex flex-col gap-3 shadow-inner border border-white/5 w-full overflow-hidden">
-                       <div className="flex flex-col gap-1 w-full">
-                         <label className="text-[9px] font-bold text-white/50">LINK DO FORNECEDOR (ORIGINAL):</label>
+                     <div className="w-full relative">
                          <input 
                            className="bg-black/20 text-white/80 text-xs rounded-lg p-2.5 w-full focus:outline-none focus:ring-1 focus:ring-brand-gold/50 border border-white/5 disabled:opacity-50"
                            value={data.rawLink}
@@ -187,16 +184,11 @@ export default function EditProductForm({ product }: { product: any }) {
                            }}
                            placeholder="Cole o novo link do fornecedor aqui caso o anterior tenha inspirado..."
                          />
-                       </div>
-                       
-                       <p className="text-[11px] text-brand-gold">
-                         <strong className="text-brand-gold select-none">Encurtado: </strong> {currentShortUrl}
-                       </p>
                      </div>
                    </div>
                    
-                   <div className="flex-1 mt-4">
-                      <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-2 block tracking-widest pl-1">
+                   <div className="flex-1 mt-3">
+                      <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-1 block tracking-widest pl-1">
                         Texto de Vendas (Copy do WhatsApp):
                       </label>
                       <textarea 
@@ -209,24 +201,30 @@ export default function EditProductForm({ product }: { product: any }) {
               </div>
            </div>
 
-           <div className="flex gap-4 items-center mt-4">
-               <button 
-                 onClick={handleSave}
-                 disabled={isSaving}
-                 className="flex-1 group inline-flex items-center justify-center gap-3 rounded-2xl bg-brand-gold text-brand-bg px-6 py-5 font-black uppercase tracking-widest text-sm hover:bg-white transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
-               >
-                 {isSaving ? 'Processando...' : (isExpired ? 'Revalidar Link Agora!' : 'Atualizar Mudanças')}
-                 <Save className="w-5 h-5 ml-1" />
-               </button>
+           {/* Espaço morto para o footer flutuante não cobrir nada */}
+           <div className="h-10"></div>
 
-               <button 
-                 onClick={handleDelete}
-                 disabled={isSaving}
-                 className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-5 font-black uppercase tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-lg disabled:opacity-50"
-                 title="Excluir produto permanentemente"
-               >
-                 <Trash2 className="w-5 h-5" />
-               </button>
+           {/* BARRA FLUTUANTE INFERIOR */}
+           <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 bg-[#0a0807]/90 backdrop-blur-xl border-t border-white/5 flex justify-center animate-in slide-in-from-bottom-5 duration-700">
+             <div className="w-full max-w-4xl flex gap-4 items-center">
+                 <button 
+                   onClick={handleSave}
+                   disabled={isSaving}
+                   className="flex-1 group inline-flex items-center justify-center gap-3 rounded-2xl bg-brand-gold text-brand-bg px-6 py-4 font-black uppercase tracking-widest text-sm hover:bg-white transition-all shadow-[0_0_40px_rgba(235,191,123,0.15)] hover:shadow-[0_0_60px_rgba(235,191,123,0.3)] disabled:opacity-50"
+                 >
+                   {isSaving ? 'Processando...' : (isExpired ? 'Revalidar Link Agora!' : 'Atualizar Mudanças')}
+                   <Save className="w-5 h-5 ml-1" />
+                 </button>
+
+                 <button 
+                   onClick={handleDelete}
+                   disabled={isSaving}
+                   className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 px-6 py-4 font-black uppercase tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-lg disabled:opacity-50"
+                   title="Excluir produto permanentemente"
+                 >
+                   <Trash2 className="w-5 h-5" />
+                 </button>
+             </div>
            </div>
         </div>
       </div>

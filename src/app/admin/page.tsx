@@ -53,6 +53,29 @@ export default async function AdminDashboard({
     priceAnalysis = await analisarPrecosTenant(tenant.id)
   }
 
+  // Analytics (Telemetria)
+  let analytics = { views: 0, clicks: 0, engagement: 0 }
+  if (tenant) {
+    // Faz contagens paralelas exatas consumindo o mínimo de recursos do banco
+    const [
+      { count: viewsCount },
+      { count: clicksCount },
+      { count: floatCount },
+      { count: groupCount }
+    ] = await Promise.all([
+      supabase.from('catalog_events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('event_type', 'page_view'),
+      supabase.from('catalog_events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('event_type', 'product_click'),
+      supabase.from('catalog_events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('event_type', 'whatsapp_float_click'),
+      supabase.from('catalog_events').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('event_type', 'whatsapp_group_click')
+    ])
+
+    analytics = {
+      views: viewsCount || 0,
+      clicks: clicksCount || 0,
+      engagement: (floatCount || 0) + (groupCount || 0)
+    }
+  }
+
   return (
     <div className="flex-1 p-6 sm:p-8 animate-in fade-in duration-500 h-full overflow-auto">
       <div className="max-w-7xl mx-auto">
@@ -103,6 +126,24 @@ export default async function AdminDashboard({
             </form>
           </div>
         </header>
+
+        {/* DASHBOARD DE MÉTRICAS */}
+        {tenant && (
+          <div className="grid grid-cols-3 gap-4 mb-8 animate-in slide-in-from-bottom-2 duration-500">
+            <div className="glass bg-white/5 rounded-2xl p-5 border border-white/5 flex flex-col justify-center items-center shadow-lg">
+              <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold/70 mb-1">Visitas na Vitrine</span>
+              <span className="text-3xl font-serif font-black">{analytics.views}</span>
+            </div>
+            <div className="glass bg-emerald-500/10 rounded-2xl p-5 border border-emerald-500/20 flex flex-col justify-center items-center shadow-lg">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 mb-1">Cliques nas Ofertas</span>
+              <span className="text-3xl font-serif font-black text-emerald-400">{analytics.clicks}</span>
+            </div>
+            <div className="glass bg-blue-500/10 rounded-2xl p-5 border border-blue-500/20 flex flex-col justify-center items-center shadow-lg">
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400/80 mb-1">Interação (WhatsApp)</span>
+              <span className="text-3xl font-serif font-black text-blue-400">{analytics.engagement}</span>
+            </div>
+          </div>
+        )}
 
         {/* FILTRO DE STATUS */}
         <div className="flex flex-wrap items-center gap-3 mb-8 animate-in slide-in-from-left-4 duration-500">

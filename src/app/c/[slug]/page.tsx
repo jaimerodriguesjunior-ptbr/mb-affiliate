@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ShoppingCart, Star, Sparkles, MessageCircle, Bell } from 'lucide-react'
+import { Tracker, TrackedSocialLink } from './Tracker'
 
 // Metadata dinâmico do site (Para SEO e compartilhamento do link)
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -103,8 +104,9 @@ export default async function PublicCatalog({
           backgroundAttachment: 'fixed'
         }}
       />
-      {/* OVERLAY ESCURO PARA LEGIBILIDADE (85% PARA MANTER DRAMATISMO) */}
       <div className="fixed inset-0 z-0 bg-[#0a0807]/85 backdrop-blur-[2px]" />
+
+      <Tracker tenantId={tenant.id} eventType="page_view" />
 
       <div className="relative z-10">
 
@@ -140,13 +142,13 @@ export default async function PublicCatalog({
            Navegue por nossa curadoria especial. Garanta os melhores preços ativos apenas enquanto durarem os nossos estoques monitorados!
          </p>
 
-         {/* BOTÃO GRUPO VIP (FIXO) */}
          {whatsappGroupUrl && (
            <div className="mt-8 relative z-10 animate-in slide-in-from-bottom-4 duration-700 delay-300">
-              <a 
+              <TrackedSocialLink
                 href={whatsappGroupUrl} 
                 target="_blank" 
-                rel="noopener noreferrer" 
+                tenantId={tenant.id}
+                eventType="whatsapp_group_click"
                 className="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full bg-gradient-to-r from-brand-gold to-[#fcd99e] px-8 py-4 font-black uppercase text-brand-bg tracking-widest shadow-[0_0_40px_rgba(235,191,123,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(235,191,123,0.5)]"
               >
                 {/* Efeito de brilho passando */}
@@ -155,7 +157,7 @@ export default async function PublicCatalog({
                 </div>
                 <Bell className="w-5 h-5 relative z-10 group-hover:animate-wiggle" />
                 <span className="relative z-10 text-[11px] sm:text-xs pt-[1px]">Entrar no Grupo VIP</span>
-              </a>
+              </TrackedSocialLink>
            </div>
          )}
       </div>
@@ -278,14 +280,16 @@ export default async function PublicCatalog({
       
       {/* WhatsApp Flutuante */}
       {whatsappPhone && (
-        <a
+        <TrackedSocialLink
           href={`https://api.whatsapp.com/send?phone=${whatsappPhone}&text=${encodeURIComponent('Olá! Vim do seu catálogo de ofertas e gostaria de tirar uma dúvida.')}`}
           target="whatsapp_web"
+          tenantId={tenant.id}
+          eventType="whatsapp_float_click"
           className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#1fb855] text-white p-4 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:shadow-[0_8px_30px_rgba(37,211,102,0.6)] transition-all hover:scale-110 animate-in zoom-in-50 duration-500 group"
           title="Falar com o vendedor pelo WhatsApp"
         >
           <MessageCircle className="w-7 h-7 fill-current group-hover:scale-110 transition-transform" />
-        </a>
+        </TrackedSocialLink>
       )}
 
       <footer className="py-8 text-center text-white/20 text-xs font-black uppercase tracking-widest border-t border-white/5 relative z-10">
