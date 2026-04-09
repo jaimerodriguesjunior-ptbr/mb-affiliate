@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Save, Trash2 } from 'lucide-react'
-import { updateProduct, deleteProduct } from '../../actions'
+import { updateProduct, deleteProduct, getTenantCategories } from '../../actions'
 import { useRouter } from 'next/navigation'
 import { ImageUpload } from '../../../ImageUpload'
 
@@ -11,19 +11,23 @@ export default function EditProductForm({ product }: { product: any }) {
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [availableCategories, setAvailableCategories] = useState<string[]>([])
+  
   const [data, setData] = useState({
     title: product.name || '',
     imageUrl: product.image_url || '',
     copy: product.generated_copy || '',
     rawLink: product.raw_link || '',
     price: product.price || '',
-    category: product.category || 'Diversos'
+    category: product.category?.toUpperCase() || 'DIVERSOS'
   })
+
+  useEffect(() => {
+    getTenantCategories().then(setAvailableCategories)
+  }, [])
 
   const displayImage = data.imageUrl || product.image_url
   
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-
   const validationDate = new Date(product.last_validated_at || product.created_at)
   const diffMs = new Date().getTime() - validationDate.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
@@ -126,15 +130,27 @@ export default function EditProductForm({ product }: { product: any }) {
                        <label className="text-[10px] font-black uppercase text-brand-gold/60 mb-2 tracking-widest pl-1 block">
                          🏷️ Categoria da Loja:
                        </label>
-                       <select
-                         className="w-full glass-input bg-[#221c18] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-gold/50 cursor-pointer shadow-inner"
-                         value={data.category}
-                         onChange={(e) => setData({ ...data, category: e.target.value })}
-                       >
-                         {['Diversos', 'Eletrônicos', 'Casa & Cozinha', 'Beleza & Saúde', 'Moda', 'Ferramentas', 'Brinquedos', 'Informática'].map(c => (
-                           <option key={c} value={c}>{c}</option>
-                         ))}
-                       </select>
+                       <input
+                          list="categories-list"
+                          className="w-full glass-input bg-[#221c18] border border-white/10 rounded-xl p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-gold/50 cursor-pointer shadow-inner placeholder-white/20 uppercase"
+                          value={data.category}
+                          onChange={(e) => setData({ ...data, category: e.target.value.toUpperCase() })}
+                          placeholder="DIGITE OU SELECIONE..."
+                        />
+                        <datalist id="categories-list">
+                          {availableCategories.map(c => (
+                            <option key={c} value={c} />
+                          ))}
+                          {availableCategories.length === 0 && (
+                            <>
+                              <option value="DIVERSOS" />
+                              <option value="ELETRÔNICOS" />
+                              <option value="CASA & COZINHA" />
+                              <option value="BELEZA & SAÚDE" />
+                              <option value="MODA" />
+                            </>
+                          )}
+                        </datalist>
                      </div>
                    </div>
                    

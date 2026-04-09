@@ -84,7 +84,11 @@ export default async function PublicCatalog({
     })
   }
 
-  const AVAILABLE_CATEGORIES = ['Todos', 'Diversos', 'Eletrônicos', 'Casa & Cozinha', 'Beleza & Saúde', 'Moda', 'Ferramentas', 'Brinquedos', 'Informática']
+  // Obter categorias únicas dos produtos ativos para o menu de filtros
+  const categoriesList = Array.from(new Set(activeProducts.map(p => p.category?.toUpperCase() || 'DIVERSOS')))
+    .filter(Boolean)
+    .sort()
+  const AVAILABLE_CATEGORIES = ['Todos', ...categoriesList]
   
   const PRICE_FILTERS = [
     { label: 'Qualquer Valor', value: 'Todos' },
@@ -243,7 +247,7 @@ export default async function PublicCatalog({
                 <div className="p-6 sm:p-7 flex flex-col flex-1 relative z-20 -mt-8">
                   <div className="flex justify-between items-start mb-3">
                      <span className="bg-[#1A1614] text-brand-gold border border-brand-gold/30 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-2xl">
-                        {product.category || 'Diversos'}
+                        {product.category || 'DIVERSOS'}
                      </span>
                   </div>
                   

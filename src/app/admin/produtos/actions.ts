@@ -263,7 +263,7 @@ export async function saveProduct(data: {
         image_url: data.imageUrl,
         generated_copy: data.copy,
         price: data.price,
-        category: data.category,
+        category: data.category ? data.category.toUpperCase().trim() : 'DIVERSOS',
       })
 
     if (error) return { success: false, error: error.message }
@@ -284,6 +284,7 @@ export async function updateProduct(id: string, updates: { name: string, image_u
       .from('products')
       .update({
         ...updates,
+        category: updates.category ? updates.category.toUpperCase().trim() : 'DIVERSOS',
         last_validated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -346,5 +347,30 @@ export async function togglePublish(id: string, newState: boolean) {
     return { success: true }
   } catch (e: any) {
     return { success: false, error: e.message }
+  }
+}
+
+export async function getTenantCategories() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data: products } = await supabase
+      .from('products')
+      .select('category')
+      .not('category', 'is', null)
+
+    if (!products) return []
+
+    // Get unique categories and sort them
+    const categories = Array.from(new Set(products.map(p => p.category)))
+      .filter(Boolean)
+      .sort()
+
+    return categories as string[]
+  } catch (e) {
+    console.error('Error fetching categories:', e)
+    return []
   }
 }

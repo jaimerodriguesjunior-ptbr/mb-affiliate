@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Wand2, Link as LinkIcon, Save, RefreshCw } from 'lucide-react'
-import { scrapeAndGenerateCopy, saveProduct } from '../actions'
+import { scrapeAndGenerateCopy, saveProduct, getTenantCategories } from '../actions'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { ImageUpload } from '../../ImageUpload'
 
 type PreviewData = {
@@ -25,6 +26,11 @@ export default function NewProductPage() {
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
+  const [availableCategories, setAvailableCategories] = useState<string[]>([])
+
+  useEffect(() => {
+    getTenantCategories().then(setAvailableCategories)
+  }, [])
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +45,7 @@ export default function NewProductPage() {
        setPreview({ 
          ...result.data, 
          price: result.data.price === null ? '' : result.data.price, 
-         category: 'Diversos' 
+         category: 'DIVERSOS' 
        })
     } else {
        setErrorMsg(result.error || 'Erro desconhecido')
@@ -136,7 +142,7 @@ export default function NewProductPage() {
                 className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-brand-brown px-8 py-5 text-[13px] font-black uppercase tracking-[0.2em] text-white shadow-[0_16px_30px_rgba(140,109,69,0.30)] hover:bg-brand-brown-dark focus:ring-2 focus:ring-brand-gold/50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Analisando e Gerando Copy...' : (pageContent ? 'Gerar Copy com Texto Colado' : 'Gerar Copy (Modo Básico)')}
-                <Wand2 className={`w-5 h-5 transition-transform ${isLoading ? 'animate-pulse' : 'group-hover:rotate-12 group-hover:scale-110'}`} />
+                < Wand2 className={`w-5 h-5 transition-transform ${isLoading ? 'animate-pulse' : 'group-hover:rotate-12 group-hover:scale-110'}`} />
               </button>
 
               <button 
@@ -150,7 +156,7 @@ export default function NewProductPage() {
                     copy: '',
                     shortId: crypto.randomUUID().split('-')[0],
                     price: '',
-                    category: 'Diversos'
+                    category: 'DIVERSOS'
                   })
                 }}
                 disabled={isLoading}
@@ -225,15 +231,27 @@ export default function NewProductPage() {
                          <label className="text-[10px] font-black uppercase text-brand-gold/70 mb-1 block tracking-widest">
                            🏷️ Categoria da Loja:
                          </label>
-                         <select
-                           className="w-full glass-input bg-[#221c18] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-gold/50 cursor-pointer"
-                           value={preview.category}
-                           onChange={(e) => setPreview({ ...preview, category: e.target.value })}
-                         >
-                           {['Diversos', 'Eletrônicos', 'Casa & Cozinha', 'Beleza & Saúde', 'Moda', 'Ferramentas', 'Brinquedos', 'Informática'].map(c => (
-                             <option key={c} value={c}>{c}</option>
-                           ))}
-                         </select>
+                         <input
+                            list="categories-list"
+                            className="w-full glass-input bg-[#221c18] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-gold/50 cursor-pointer placeholder-white/20 uppercase"
+                            value={preview.category}
+                            onChange={(e) => setPreview({ ...preview, category: e.target.value.toUpperCase() })}
+                            placeholder="DIGITE OU SELECIONE..."
+                          />
+                          <datalist id="categories-list">
+                            {availableCategories.map(c => (
+                              <option key={c} value={c} />
+                            ))}
+                            {availableCategories.length === 0 && (
+                              <>
+                                <option value="DIVERSOS" />
+                                <option value="ELETRÔNICOS" />
+                                <option value="CASA & COZINHA" />
+                                <option value="BELEZA & SAÚDE" />
+                                <option value="MODA" />
+                              </>
+                            )}
+                          </datalist>
                        </div>
                      </div>
 
