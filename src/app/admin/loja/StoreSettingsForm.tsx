@@ -65,7 +65,7 @@ export default function StoreSettingsForm({ tenant }: { tenant: any }) {
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState<{ type: 'error' | 'success', msg: string } | null>(null)
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mb-affiliate.vercel.app'
   const displayUrl = `${baseUrl.replace(/^https?:\/\//, '')}/c/${slug || 'sua-loja'}`
 
   const hasChanges = slug !== tenant.slug || name !== tenant.name || logoUrl !== tenant.logo_url || whatsapp !== initialPhone || groupUrl !== initialGroup

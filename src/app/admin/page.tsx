@@ -113,7 +113,7 @@ export default async function AdminDashboard({
                       Acessar Vitrine
                       <ExternalLink className="w-4 h-4" />
                     </a>
-                    <GeneralCatalogCopy catalogUrl={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/c/${tenant.slug}`} />
+                    <GeneralCatalogCopy catalogUrl={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://mb-affiliate.vercel.app'}/c/${tenant.slug}`} />
                   </>
                 )}
               </>
